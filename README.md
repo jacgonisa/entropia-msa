@@ -341,7 +341,7 @@ python ../../src/calculate_shannon_entropy.py
 If you use this tool in your research, please cite:
 
 ```
-González, J. (2025). Entropia-MSA: Shannon Entropy Analysis for Multiple Sequence Alignments.
+Gonzalez, J. (2025). Entropia-MSA: Shannon Entropy Analysis for Multiple Sequence Alignments.
 GitHub: https://github.com/jacgonisa/entropia-msa
 ```
 
@@ -380,7 +380,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Contact
 
-- **Author**: Javier González
+- **Author**: Jacob Gonzalez
 - **GitHub**: [@jacgonisa](https://github.com/jacgonisa)
 - **Repository**: https://github.com/jacgonisa/entropia-msa
 
