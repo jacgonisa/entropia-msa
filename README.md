@@ -5,6 +5,8 @@
 
 A comprehensive toolkit for calculating and visualizing Shannon entropy in protein multiple sequence alignments (MSAs). Designed for comparative genomics and phylogenomics studies.
 
+> **See [Example Outputs](#example-outputs)** below for visualization examples from the included sample data.
+
 ## Features
 
 - **Shannon Entropy Calculation**: Calculate normalized Shannon entropy for amino acid alignments
@@ -74,6 +76,43 @@ python /path/to/entropia-msa/src/plot_heatmap_with_entropy.py
 
 **Output**:
 - `kinetochore_heatmap_with_entropy.{png,pdf,svg}`
+
+## Example Outputs
+
+### Entropy Summary Plot
+
+Overview of entropy distribution across genes:
+
+![Entropy Plot](examples/output/entropy_plot.png)
+
+*Bar plot showing genes ranked by mean normalized Shannon entropy, with distribution histogram.*
+
+### Positional Entropy Profiles
+
+Detailed entropy along alignment positions for individual genes:
+
+#### Highly Conserved: Histone H3
+![H3 Positional Entropy](examples/output/example_H3.png)
+
+*Mean entropy: 0.0095 - Extremely conserved protein with minimal variation.*
+
+#### Moderately Variable: Nuf2
+![Nuf2 Positional Entropy](examples/output/example_Nuf2.png)
+
+*Mean entropy: 0.2927 - Moderate sequence variation with conserved and variable regions.*
+
+#### Highly Variable: Skp1
+![Skp1 Positional Entropy](examples/output/example_Skp1.png)
+
+*Mean entropy: 0.3932 - High sequence variability across most positions.*
+
+### Integrated Heatmap with Entropy
+
+Combination of Shannon entropy and gene copy number data:
+
+![Integrated Heatmap](examples/output/example_integrated_heatmap.png)
+
+*Top: Entropy barplot (left) and copy number variance (right). Bottom: Gene copy number heatmap across species. X-axis labels show protein names color-coded by complex.*
 
 ## Methodology
 
