@@ -9,9 +9,18 @@ A comprehensive toolkit for calculating and visualizing Shannon entropy in prote
 
 ## Features
 
+### Column-wise Analysis (Position-level)
 - **Shannon Entropy Calculation**: Calculate normalized Shannon entropy for amino acid alignments
 - **Gap Trimming**: Automatically remove poorly aligned regions (>80% gaps)
 - **Positional Entropy Profiles**: Generate detailed entropy plots along alignment positions
+
+### Row-wise Analysis (Taxon-level) 🆕
+- **Sequence Divergence**: Calculate mean pairwise distance for each sequence
+- **Divergent Taxon Detection**: Identify outlier sequences and conserved lineages
+- **Distance to Consensus**: Measure how far each sequence is from the consensus
+
+### Integrated Analysis
+- **Complete MSA Overview**: Combined column + row analysis in single visualization
 - **Copy Number Integration**: Combine entropy metrics with gene copy number heatmaps
 - **Publication-Ready Figures**: Export high-quality PDF, PNG, and SVG visualizations
 
@@ -60,7 +69,28 @@ python /path/to/entropia-msa/src/plot_positional_entropy.py
 **Output**:
 - `positional_entropy_all_genes.pdf`: Multi-page PDF with one plot per gene
 
-### 3. Create Integrated Heatmap (Optional)
+### 3. Calculate Sequence Divergence (Row-wise Analysis) 🆕
+
+```bash
+python /path/to/entropia-msa/src/calculate_sequence_divergence.py
+```
+
+**Output**:
+- `sequence_divergence_results.csv`: Per-sequence divergence metrics
+- `divergence_plot.png`: Visualization of taxon-level divergence
+
+### 4. Generate Complete MSA Overview 🆕
+
+For a comprehensive analysis combining both column and row-wise metrics:
+
+```bash
+python /path/to/entropia-msa/src/plot_msa_overview.py <alignment_file.msa>
+```
+
+**Output**:
+- `<gene_id>_msa_overview.{png,pdf}`: Integrated visualization
+
+### 5. Create Integrated Heatmap (Optional)
 
 For combining entropy with gene copy number data:
 
@@ -106,6 +136,22 @@ Detailed entropy along alignment positions for individual genes:
 
 *Mean entropy: 0.3932 - High sequence variability across most positions.*
 
+### Sequence Divergence Analysis (Row-wise) 🆕
+
+Taxon-level divergence metrics:
+
+![Divergence Plot](examples/output/divergence_plot.png)
+
+*Distribution of sequence divergence across all genes, showing mean pairwise distances, distance to consensus, and per-gene summaries.*
+
+### Complete MSA Overview 🆕
+
+Integrated column + row analysis for individual genes:
+
+![MSA Overview](examples/output/OG0000122_Skp1_msa_overview.png)
+
+*Top: Positional entropy profile. Middle: Alignment heatmap with most/least divergent sequences and divergence barplot. Bottom: Distribution histograms for both metrics.*
+
 ### Integrated Heatmap with Entropy
 
 Combination of Shannon entropy and gene copy number data:
@@ -143,6 +189,31 @@ Where `log₂(20) = 4.32` for 20 standard amino acids.
 ### Gap Trimming
 
 Alignment columns with ≥80% gaps are removed before entropy calculation to focus on reliably aligned regions.
+
+### Sequence Divergence (Row-wise Analysis) 🆕
+
+For each sequence *s*, calculate divergence metrics:
+
+**Mean Pairwise Distance:**
+```
+D(s) = (1/N) × Σ d(s, s_i)
+```
+
+Where:
+- `d(s, s_i)` = pairwise distance (proportion of differing amino acids)
+- `N` = number of other sequences
+
+**Distance to Consensus:**
+```
+D_cons(s) = d(s, consensus)
+```
+
+Where `consensus` = most common amino acid at each position.
+
+**Interpretation**:
+- **High divergence (>0.5)**: Outlier/divergent lineage
+- **Medium divergence (0.2-0.5)**: Moderate variation
+- **Low divergence (<0.2)**: Conserved/typical sequence
 
 ### Copy Number Variance
 
