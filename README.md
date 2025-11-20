@@ -148,9 +148,17 @@ Taxon-level divergence metrics:
 
 Integrated column + row analysis for individual genes:
 
-![MSA Overview](examples/output/OG0000122_Skp1_msa_overview.png)
+#### Highly Conserved: Histone H3
 
-*Top: Positional entropy profile. Middle: Alignment heatmap with most/least divergent sequences and divergence barplot. Bottom: Distribution histograms for both metrics.*
+![H3 MSA Overview](examples/output/OG0000103_H3_msa_overview.png)
+
+*Mean entropy: 0.0095 | Mean divergence: 0.0164 - Extremely conserved protein with minimal variation at both position and sequence levels. No highly variable positions or divergent sequences.*
+
+#### Highly Variable: Skp1
+
+![Skp1 MSA Overview](examples/output/OG0000122_Skp1_msa_overview.png)
+
+*Mean entropy: 0.3932 | Mean divergence: 0.5073 - Highly variable protein showing 206/616 variable positions and 318/324 divergent sequences. Top: Positional entropy profile. Middle: Alignment heatmap with most/least divergent sequences and divergence barplot. Bottom: Distribution histograms for both metrics.*
 
 ### Integrated Heatmap with Entropy
 
