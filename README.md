@@ -106,6 +106,8 @@ python ../src/plot_positional_entropy.py \
 Demo inputs:
 - `examples/toy.msa`
 - `examples/groups.tsv`
+Demo output:
+- `examples/toy_positional_entropy.png`
 
 **Output**:
 - `positional_entropy_all_genes.pdf`: Multi-page PDF with one plot per gene
