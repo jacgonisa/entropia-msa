@@ -66,6 +66,17 @@ python /path/to/entropia-msa/src/calculate_shannon_entropy.py
 python /path/to/entropia-msa/src/plot_positional_entropy.py
 ```
 
+Split-group positional entropy (overlay group curves and output per-group summaries):
+```bash
+python /path/to/entropia-msa/src/plot_positional_entropy.py \
+  --input-glob "*.msa" \
+  --output positional_entropy_all_genes.pdf \
+  --gap-threshold 0.8 \
+  --split-groups groups.tsv \
+  --split-output-dir split_entropy_csv
+```
+Where `groups.tsv` has at least two columns: `seq_id` and `group`.
+
 **Output**:
 - `positional_entropy_all_genes.pdf`: Multi-page PDF with one plot per gene
 

@@ -6,7 +6,9 @@ This script generates a comprehensive multi-page PDF showing Shannon entropy
 across alignment positions for each gene.
 
 Usage:
-    python plot_positional_entropy.py
+    python plot_positional_entropy.py [--input-glob "*.msa"] [--output positional_entropy_all_genes.pdf]
+                                     [--gap-threshold 0.8] [--split-groups groups.tsv]
+                                     [--split-output-dir split_entropy_csv]
 
 Output:
     - positional_entropy_all_genes.pdf: Multi-page PDF with one plot per gene
@@ -19,8 +21,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 import glob
+import argparse
+import os
 
 
 def read_fasta(filepath: str) -> Dict[str, str]:
@@ -152,7 +156,9 @@ def calculate_shannon_entropy(sequences: List[str], normalize: bool = True) -> n
 
 
 def plot_gene_entropy(gene_id: str, entropy_array: np.ndarray, num_sequences: int,
-                      original_length: int, trimmed_length: int, ax: plt.Axes):
+                      original_length: int, trimmed_length: int, ax: plt.Axes,
+                      group_entropies: Optional[Dict[str, np.ndarray]] = None,
+                      group_sizes: Optional[Dict[str, int]] = None):
     """
     Create a plot of positional entropy for a single gene.
 
@@ -177,8 +183,8 @@ def plot_gene_entropy(gene_id: str, entropy_array: np.ndarray, num_sequences: in
     max_entropy = np.max(entropy_array)
     std_entropy = np.std(entropy_array)
 
-    # Create the plot
-    ax.plot(positions, entropy_array, color='steelblue', linewidth=0.8, alpha=0.7)
+    # Create the plot (overall)
+    ax.plot(positions, entropy_array, color='steelblue', linewidth=0.8, alpha=0.7, label='All')
     ax.fill_between(positions, entropy_array, alpha=0.3, color='steelblue')
 
     # Add horizontal lines for mean and median
@@ -195,6 +201,17 @@ def plot_gene_entropy(gene_id: str, entropy_array: np.ndarray, num_sequences: in
     # Highlight high entropy positions
     ax.scatter(high_entropy_positions, high_entropy_values, color='red',
                s=20, alpha=0.6, zorder=5, label=f'High variability (>75th percentile)')
+
+    # Optional: overlay split-group entropies
+    if group_entropies:
+        palette = sns.color_palette("tab10", n_colors=len(group_entropies))
+        for i, (group_name, group_entropy) in enumerate(sorted(group_entropies.items())):
+            if group_entropy is None or len(group_entropy) == 0:
+                continue
+            label = group_name
+            if group_sizes and group_name in group_sizes:
+                label = f"{group_name} (n={group_sizes[group_name]})"
+            ax.plot(positions, group_entropy, color=palette[i], linewidth=1.0, alpha=0.7, label=label)
 
     # Labels and formatting
     ax.set_xlabel('Alignment Position', fontsize=11, fontweight='bold')
@@ -225,7 +242,41 @@ def plot_gene_entropy(gene_id: str, entropy_array: np.ndarray, num_sequences: in
     ax.axhspan(0.5, 1.0, alpha=0.05, color='red', zorder=0)
 
 
-def create_entropy_pdf(output_file: str = 'positional_entropy_all_genes.pdf'):
+def read_group_map(filepath: str) -> Dict[str, str]:
+    """
+    Read a two-column mapping of sequence_id -> group from TSV/CSV.
+    Accepts a header; columns named like seq_id/id and group/label are preferred.
+    """
+    df = pd.read_csv(filepath, sep=None, engine='python', comment='#')
+    if df.shape[1] < 2:
+        raise ValueError(f"Group file must have at least 2 columns: {filepath}")
+    cols = [c.lower() for c in df.columns]
+
+    id_col = None
+    group_col = None
+    for c in df.columns:
+        lc = c.lower()
+        if lc in {'seq_id', 'sequence_id', 'id'}:
+            id_col = c
+        if lc in {'group', 'label', 'class'}:
+            group_col = c
+    if id_col is None or group_col is None:
+        id_col, group_col = df.columns[:2]
+
+    mapping = {}
+    for _, row in df.iterrows():
+        seq_id = str(row[id_col]).strip()
+        group = str(row[group_col]).strip()
+        if seq_id:
+            mapping[seq_id] = group
+    return mapping
+
+
+def create_entropy_pdf(output_file: str = 'positional_entropy_all_genes.pdf',
+                       input_glob: str = '*.msa',
+                       gap_threshold: float = 0.8,
+                       split_groups_path: Optional[str] = None,
+                       split_output_dir: Optional[str] = None):
     """
     Create a multi-page PDF with positional entropy plots for all genes.
 
@@ -233,7 +284,7 @@ def create_entropy_pdf(output_file: str = 'positional_entropy_all_genes.pdf'):
         output_file: Output PDF filename
     """
     # Find all .msa files
-    msa_files = sorted(glob.glob("*.msa"))
+    msa_files = sorted(glob.glob(input_glob))
 
     print("=" * 80)
     print("Positional Entropy Plotter")
@@ -245,6 +296,17 @@ def create_entropy_pdf(output_file: str = 'positional_entropy_all_genes.pdf'):
     # Set style
     sns.set_style("whitegrid")
     plt.rcParams['figure.dpi'] = 100
+
+    # Optional group mapping
+    group_map = None
+    if split_groups_path:
+        group_map = read_group_map(split_groups_path)
+        print(f"\nLoaded {len(group_map)} sequence-group assignments from {split_groups_path}")
+
+    if split_output_dir:
+        os.makedirs(split_output_dir, exist_ok=True)
+
+    split_summary_rows = []
 
     # Create PDF
     with PdfPages(output_file) as pdf:
@@ -260,18 +322,57 @@ def create_entropy_pdf(output_file: str = 'positional_entropy_all_genes.pdf'):
             original_length = len(list(sequences.values())[0]) if sequences else 0
 
             # Trim alignment
-            trimmed_seqs, kept_indices = trim_alignment(sequences, gap_threshold=0.8)
+            trimmed_seqs, kept_indices = trim_alignment(sequences, gap_threshold=gap_threshold)
             trimmed_length = len(trimmed_seqs[0]) if trimmed_seqs else 0
 
             # Calculate entropy
             entropy_array = calculate_shannon_entropy(trimmed_seqs, normalize=True)
+
+            # Optional: split-group entropy using same trimmed columns
+            group_entropies = None
+            group_sizes = None
+            if group_map:
+                group_entropies = {}
+                group_sizes = {}
+                # assign sequences to groups
+                for seq_id in sequences.keys():
+                    if seq_id in group_map:
+                        group = group_map[seq_id]
+                        group_sizes[group] = group_sizes.get(group, 0) + 1
+                for group in sorted(group_sizes.keys()):
+                    ids = [sid for sid in sequences.keys() if group_map.get(sid) == group]
+                    group_seqs = [sequences[sid] for sid in ids]
+                    group_trimmed = [''.join(seq[i] for i in kept_indices) for seq in group_seqs]
+                    group_entropy = calculate_shannon_entropy(group_trimmed, normalize=True)
+                    group_entropies[group] = group_entropy
+
+                    # Summary stats
+                    split_summary_rows.append({
+                        'gene_id': gene_id,
+                        'group': group,
+                        'n_sequences': len(group_seqs),
+                        'original_length': original_length,
+                        'trimmed_length': trimmed_length,
+                        'mean_entropy': float(np.mean(group_entropy)) if len(group_entropy) else np.nan,
+                        'median_entropy': float(np.median(group_entropy)) if len(group_entropy) else np.nan
+                    })
+
+                # Optional per-position CSV
+                if split_output_dir and len(entropy_array) > 0:
+                    out_df = pd.DataFrame({'position': np.arange(1, len(entropy_array) + 1),
+                                           'entropy_all': entropy_array})
+                    for group, ent in group_entropies.items():
+                        if ent is not None and len(ent) == len(entropy_array):
+                            out_df[f'entropy_{group}'] = ent
+                    out_df.to_csv(Path(split_output_dir) / f"{gene_id}_split_entropy.csv", index=False)
 
             # Create figure
             fig, ax = plt.subplots(figsize=(14, 6))
 
             # Plot
             plot_gene_entropy(gene_id, entropy_array, num_sequences,
-                            original_length, trimmed_length, ax)
+                            original_length, trimmed_length, ax,
+                            group_entropies=group_entropies, group_sizes=group_sizes)
 
             # Add page number
             fig.text(0.99, 0.01, f'Page {idx}/{len(msa_files)}',
@@ -287,10 +388,34 @@ def create_entropy_pdf(output_file: str = 'positional_entropy_all_genes.pdf'):
     print(f"Total pages: {len(msa_files)}")
     print("=" * 80)
 
+    if split_summary_rows:
+        summary_df = pd.DataFrame(split_summary_rows)
+        summary_path = Path(output_file).with_suffix('').as_posix() + "_split_summary.tsv"
+        summary_df.to_csv(summary_path, sep='\t', index=False)
+        print(f"\nSplit-group summary saved to: {summary_path}")
+
 
 def main():
     """Main execution function."""
-    create_entropy_pdf('positional_entropy_all_genes.pdf')
+    parser = argparse.ArgumentParser(description="Plot positional Shannon entropy for MSAs.")
+    parser.add_argument('--input-glob', default='*.msa', help='Glob pattern for input MSA files')
+    parser.add_argument('--output', default='positional_entropy_all_genes.pdf', help='Output PDF filename')
+    parser.add_argument('--gap-threshold', type=float, default=0.8,
+                        help='Gap threshold for trimming (fraction of sequences)')
+    parser.add_argument('--split-groups', default=None,
+                        help='TSV/CSV with columns: seq_id, group (adds split-group entropy overlays)')
+    parser.add_argument('--split-output-dir', default=None,
+                        help='Optional directory to write per-position split entropy CSVs')
+
+    args = parser.parse_args()
+
+    create_entropy_pdf(
+        output_file=args.output,
+        input_glob=args.input_glob,
+        gap_threshold=args.gap_threshold,
+        split_groups_path=args.split_groups,
+        split_output_dir=args.split_output_dir
+    )
 
 
 if __name__ == '__main__':
