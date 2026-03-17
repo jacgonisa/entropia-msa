@@ -1,0 +1,6 @@
+seq_id	group
+sp1_geneA	Satellite
+sp2_geneA	Satellite
+sp3_geneA	Transposon
+sp4_geneA	Transposon
+sp5_geneA	Mixed

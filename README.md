@@ -77,6 +77,36 @@ python /path/to/entropia-msa/src/plot_positional_entropy.py \
 ```
 Where `groups.tsv` has at least two columns: `seq_id` and `group`.
 
+Example `groups.tsv`:
+```tsv
+seq_id	group
+sp1_geneA	Satellite
+sp2_geneA	Satellite
+sp3_geneA	Transposon
+sp4_geneA	Transposon
+sp5_geneA	Mixed
+```
+
+What you get:
+- Overlaid entropy curves per group on each positional entropy plot.
+- `*_split_summary.tsv` next to the PDF with mean/median entropy per group.
+- Optional per-position CSVs in `--split-output-dir` (one per gene), e.g.:
+  - `split_entropy_csv/CENPA_split_entropy.csv` with columns `position`, `entropy_all`, and `entropy_<Group>`.
+
+Minimal demo (toy data):
+```bash
+cd examples
+python ../src/plot_positional_entropy.py \
+  --input-glob "toy.msa" \
+  --output toy_positional_entropy.pdf \
+  --gap-threshold 0.8 \
+  --split-groups groups.tsv \
+  --split-output-dir split_entropy_csv
+```
+Demo inputs:
+- `examples/toy.msa`
+- `examples/groups.tsv`
+
 **Output**:
 - `positional_entropy_all_genes.pdf`: Multi-page PDF with one plot per gene
 
